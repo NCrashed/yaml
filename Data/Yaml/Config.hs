@@ -33,6 +33,7 @@ import Data.Monoid
 import Data.Semigroup
 import Data.List.NonEmpty (nonEmpty)
 import Data.Aeson
+import Data.Aeson.Types as A (parseEither)
 import qualified Data.HashMap.Strict as H
 import Data.Text (Text, pack)
 import System.Environment (getArgs, getEnvironment)
@@ -194,9 +195,13 @@ loadYamlSettings runTimeFiles compileValues envUsage = do
             UseCustomEnv env     -> return $ applyEnvValue   False env    value'
             RequireCustomEnv env -> return $ applyEnvValue   True  env    value'
 
-    case fromJSON value of
-        Error s -> error $ "Could not convert to AppSettings: " ++ s
-        Success settings -> return settings
+    case fromJSONEither value of
+        Left s -> error $ "Could not convert to AppSettings: " ++ s
+        Right settings -> return settings
+
+-- | Same as 'fromJSON' but prints full error, doesn't omit path in JSON
+fromJSONEither :: FromJSON a => Value -> Either String a
+fromJSONEither = A.parseEither parseJSON
 
 -- | Same as @loadYamlSettings@, but get the list of runtime config files from
 -- the command line arguments.
